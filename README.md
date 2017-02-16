@@ -181,5 +181,5 @@ $copyB->save(); //attempts to update the original revision again and throws an e
 ```
 - When a revision is overwritten, its ```updated_at``` field is automatically updated. This means it's possible to have an ```updated_at``` field that does not match the revision's ```temporal_start```. The ```version``` field, however, is NOT updated (which ensures version numbers always start at 1 and never have gaps).
  
- ## Credits
- Inspired by [navjobs/temporal-models](https://github.com/navjobs/temporal-models) and [FuelPHP's temporal models](https://fuelphp.com/dev-docs/packages/orm/model/temporal.html)
+## Credits
+Inspired by [navjobs/temporal-models](https://github.com/navjobs/temporal-models) and [FuelPHP's temporal models](https://fuelphp.com/dev-docs/packages/orm/model/temporal.html)
