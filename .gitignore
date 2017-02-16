@@ -1,0 +1,7 @@
+build
+composer.lock
+vendor
+docs
+docsmd
+.idea
+._DS_STORE
