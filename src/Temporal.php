@@ -7,43 +7,25 @@ use Carbon\Carbon;
 
 trait Temporal
 {
-    /**
-     * The datetime to use for the end of the currently active version
-     *
-     * @var string
-     */
-    protected $temporal_max = '2999-01-01 00:00:00';
+	/********************************************************************************
+	 * Overridable Options
+	 * Set a protected (non-static) property without the _temporal_ prefix to override.
+	 ********************************************************************************/
 
-    /**
-     * The integer column used to represent the version number of a revision
-     *
-     * @var string
-     */
-    protected $version_column = 'version';
-
-    /**
-     * The datetime column used to represent the beginning of a version
-     *
-     * @var string
-     */
-    protected $temporal_start_column = 'temporal_start';
-
-    /**
-     * The datetime column used to represent the end of a version
-     *
-     * @var string
-     */
-    protected $temporal_end_column = 'temporal_end';
+	protected static $_temporal_temporal_max = '2999-01-01 00:00:00';
+	protected static $_temporal_version_column = 'version';
+	protected static $_temporal_temporal_start_column = 'temporal_start';
+	protected static $_temporal_temporal_end_column = 'temporal_end';
 
 
 	/********************************************************************************
-	 * Getters
+	 * Option Getters
 	 ********************************************************************************/
 
-	public function getVersionColumn() { return $this->version_column; }
-	public function getTemporalStartColumn() { return $this->temporal_start_column; }
-	public function getTemporalEndColumn() { return $this->temporal_end_column; }
-	public function getTemporalMax() { return $this->temporal_max; }
+	public function getVersionColumn() { return isset($this->version_column)?$this->version_column:static::$_temporal_version_column; }
+	public function getTemporalStartColumn() { return isset($this->temporal_start_column)?$this->temporal_start_column:static::$_temporal_temporal_start_column; }
+	public function getTemporalEndColumn() { return isset($this->temporal_end_column)?$this->temporal_end_column:static::$_temporal_temporal_end_column; }
+	public function getTemporalMax() { return isset($this->temporal_max)?$this->temporal_max:static::$_temporal_temporal_max; }
 
 
 	/********************************************************************************
@@ -64,10 +46,10 @@ trait Temporal
     public function performDeleteOnModel()
 	{
 		//we can only delete the current version...
-		if ($this->{$this->temporal_end_column} != $this->temporal_max)
+		if ($this->{$this->getTemporalEndColumn()} != $this->getTemporalMax())
 		{
 			//double-check that we don't just have to parse the dates...
-			if (Carbon::parse($this->{$this->temporal_end_column})->notEqualTo(Carbon::parse($this->temporal_max)))
+			if (Carbon::parse($this->{$this->getTemporalEndColumn()})->notEqualTo(Carbon::parse($this->getTemporalMax())))
 				throw new TemporalException('You cannot delete past revisions--only the current version.');
 		}
 
@@ -76,10 +58,10 @@ trait Temporal
 
 		$query = $this->newQueryWithoutScopes();
 		$this->setKeysForSaveQuery($query)->toBase()->update(array(
-			$this->temporal_end_column => $cutoffTimestamp
+			$this->getTemporalEndColumn() => $cutoffTimestamp
 		));
 
-		$this->{$this->temporal_end_column} = $cutoffTimestamp;
+		$this->{$this->getTemporalEndColumn()} = $cutoffTimestamp;
 		$this->syncOriginal();
 	}
 
@@ -94,10 +76,10 @@ trait Temporal
 	public function save(array $options = [])
 	{
 		//we can only save the current version...
-		if (isset($this->{$this->temporal_end_column}) && $this->{$this->temporal_end_column} != $this->temporal_max)
+		if (isset($this->{$this->getTemporalEndColumn()}) && $this->{$this->getTemporalEndColumn()} != $this->getTemporalMax())
 		{
 			//double-check that we don't just have to parse the dates...
-			if (Carbon::parse($this->{$this->temporal_end_column})->notEqualTo(Carbon::parse($this->temporal_max)))
+			if (Carbon::parse($this->{$this->getTemporalEndColumn()})->notEqualTo(Carbon::parse($this->getTemporalMax())))
 				throw new TemporalException('You cannot save past revisions--only the current version.');
 		}
 
@@ -129,14 +111,14 @@ trait Temporal
 
 				//just update the temporal_end, without triggering update events or timestamp updates...
 				$this->setKeysForSaveQuery($query)->toBase()->update(array(
-					$this->temporal_end_column=>$cutoffTimestamp
+					$this->getTemporalEndColumn()=>$cutoffTimestamp
 				));
 
 				//set new temporal properties...
 				$query = $this->newQueryWithoutScopes();
-				$this->{$this->version_column}++;
-				$this->{$this->temporal_start_column} = $cutoffTimestamp;
-				$this->{$this->temporal_end_column} = $this->temporal_max;
+				$this->{$this->getVersionColumn()}++;
+				$this->{$this->getTemporalStartColumn()} = $cutoffTimestamp;
+				$this->{$this->getTemporalEndColumn()} = $this->getTemporalMax();
 
 				//update the updated_at timestamp, if necessary...
 				if ($this->usesTimestamps())
@@ -161,9 +143,9 @@ trait Temporal
 		// which is typically an auto-increment value managed by the database.
 		else
 		{
-			$this->{$this->version_column} = 1;
-			$this->{$this->temporal_start_column} = $this->freshTimestamp();
-			$this->{$this->temporal_end_column} = $this->temporal_max;
+			$this->{$this->getVersionColumn()} = 1;
+			$this->{$this->getTemporalStartColumn()} = $this->freshTimestamp();
+			$this->{$this->getTemporalEndColumn()} = $this->getTemporalMax();
 			$saved = $this->performInsert($query);
 		}
 
@@ -187,7 +169,7 @@ trait Temporal
 	protected function setKeysForSaveQuery(Builder $query)
 	{
 		$query->where($this->getKeyName(), '=', $this->getKeyForSaveQuery());
-		$query->where($this->getVersionColumn(), '=', $this->{$this->version_column});
+		$query->where($this->getVersionColumn(), '=', $this->{$this->getVersionColumn()});
 
 		return $query;
 	}
@@ -243,7 +225,7 @@ trait Temporal
 
 			if ($this->usesTimestamps()) $this->updateTimestamps();
 
-			$this->{$this->temporal_end_column} = $this->temporal_max;
+			$this->{$this->getTemporalEndColumn()} = $this->getTemporalMax();
 
 			$dirty = $this->getDirty();
 			if (count($dirty) > 0)
@@ -290,7 +272,7 @@ trait Temporal
 	{
 		$query = $this->newQueryWithoutScopes();
 		$query->where($this->getKeyName(), $this->getKeyForSaveQuery());
-		$query->where($this->version_column, ($this->{$this->version_column} - 1));
+		$query->where($this->getVersionColumn(), ($this->{$this->getVersionColumn()} - 1));
 
 		return $query->first();
 	}
@@ -304,7 +286,7 @@ trait Temporal
 	{
 		$query = $this->newQueryWithoutScopes();
 		$query->where($this->getKeyName(), $this->getKeyForSaveQuery());
-		$query->where($this->version_column, ($this->{$this->version_column} + 1));
+		$query->where($this->getVersionColumn(), ($this->{$this->getVersionColumn()} + 1));
 
 		return $query->first();
 	}
@@ -318,7 +300,7 @@ trait Temporal
 	{
 		$query = $this->newQueryWithoutScopes();
 		$query->where($this->getKeyName(), $this->getKeyForSaveQuery());
-		$query->where($this->version_column, 1);
+		$query->where($this->getVersionColumn(), 1);
 
 		return $query->first();
 	}
@@ -333,7 +315,7 @@ trait Temporal
 	{
 		$query = $this->newQueryWithoutScopes();
 		$query->where($this->getKeyName(), $this->getKeyForSaveQuery());
-		$query->where($this->version_column, $version);
+		$query->where($this->getVersionColumn(), $version);
 
 		return $query->first();
 	}
@@ -361,7 +343,7 @@ trait Temporal
 	{
 		$query = $this->newQueryWithoutScopes();
 		$query->where($this->getKeyName(), $this->getKeyForSaveQuery());
-		$query->orderBy($this->version_column, 'desc');
+		$query->orderBy($this->getVersionColumn(), 'desc');
 
 		return $query->first();
 	}

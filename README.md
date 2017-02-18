@@ -30,6 +30,9 @@ Whenever you save or update a model, the previous version's ```temporal_end``` i
 
 When querying for temporal models, we automatically constrain the query so that only current versions are returned. Getting at old revisions is also possible using added methods.
 
+When paired with [laravel-changelog](https://github.com/gazugafan/laravel-changelog), this will give you the history of every change made to a record, including who made each change and exactly what was changed.
+
+
 ## Schema Migration
 
 You'll need to modify your table's schema a bit. The bad news is that Laravel doesn't really "support" the modifications we need to make, so we have to resort to some ugly workarounds. The good news is that I made a helper class that handles all the dirty work for you!
