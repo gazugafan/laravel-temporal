@@ -16,6 +16,7 @@ trait Temporal
 	protected static $_temporal_version_column = 'version';
 	protected static $_temporal_temporal_start_column = 'temporal_start';
 	protected static $_temporal_temporal_end_column = 'temporal_end';
+	protected static $_overwritable = array();
 
 
 	/********************************************************************************
@@ -26,6 +27,7 @@ trait Temporal
 	public function getTemporalStartColumn() { return isset($this->temporal_start_column)?$this->temporal_start_column:static::$_temporal_temporal_start_column; }
 	public function getTemporalEndColumn() { return isset($this->temporal_end_column)?$this->temporal_end_column:static::$_temporal_temporal_end_column; }
 	public function getTemporalMax() { return isset($this->temporal_max)?$this->temporal_max:static::$_temporal_temporal_max; }
+	public function getOverwritable() { return isset($this->overwritable)?$this->overwritable:static::$_overwritable; }
 
 
 	/********************************************************************************
@@ -106,32 +108,53 @@ trait Temporal
 				if ($this->fireModelEvent('updating') === false)
 					return false;
 
-				//get a solid cutoff timestamp...
-				$cutoffTimestamp = $this->freshTimestamp();
+				//if only overwritable columns have changed, then just do an overwrite...
+				$overwritableColumns = $this->getOverwritable();
+				$overwrite = true;
+				$dirty = array_keys($this->getDirty());
+				foreach($dirty as $key)
+				{
+					if (!in_array($key, $overwritableColumns))
+					{
+						$overwrite = false;
+						break;
+					}
+				}
 
-				//just update the temporal_end, without triggering update events or timestamp updates...
-				$this->setKeysForSaveQuery($query)->toBase()->update(array(
-					$this->getTemporalEndColumn()=>$cutoffTimestamp
-				));
+				if ($overwrite)
+				{
+					$this->overwrite();
+				}
+				else
+				{
+					//get a solid cutoff timestamp...
+					$cutoffTimestamp = $this->freshTimestamp();
 
-				//set new temporal properties...
-				$query = $this->newQueryWithoutScopes();
-				$this->{$this->getVersionColumn()}++;
-				$this->{$this->getTemporalStartColumn()} = $cutoffTimestamp;
-				$this->{$this->getTemporalEndColumn()} = $this->getTemporalMax();
+					//just update the temporal_end, without triggering update events or timestamp updates...
+					$this->setKeysForSaveQuery($query)->toBase()->update(array(
+						$this->getTemporalEndColumn()=>$cutoffTimestamp
+					));
 
-				//update the updated_at timestamp, if necessary...
-				if ($this->usesTimestamps())
-					$this->updateTimestamps();
+					//set new temporal properties...
+					$query = $this->newQueryWithoutScopes();
+					$this->{$this->getVersionColumn()}++;
+					$this->{$this->getTemporalStartColumn()} = $cutoffTimestamp;
+					$this->{$this->getTemporalEndColumn()} = $this->getTemporalMax();
 
-				//insert the new revision...
-				$attributes = $this->attributes;
-				$query->insert($attributes);
+					//update the updated_at timestamp, if necessary...
+					if ($this->usesTimestamps())
+						$this->updateTimestamps();
 
-				// Once we have run the update operation, we will fire the "updated" event for
-				// this model instance. This will allow developers to hook into these after
-				// models are updated, giving them a chance to do any special processing.
-				$this->fireModelEvent('updated', false);
+					//insert the new revision...
+					$attributes = $this->attributes;
+					$query->insert($attributes);
+
+					// Once we have run the update operation, we will fire the "updated" event for
+					// this model instance. This will allow developers to hook into these after
+					// models are updated, giving them a chance to do any special processing.
+					$this->fireModelEvent('updated', false);
+				}
+
 				$saved = true;
 			}
 			else

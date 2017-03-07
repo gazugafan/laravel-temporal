@@ -79,6 +79,7 @@ class Widget extends Model
     protected $temporal_start_column = 'temporal_start';
     protected $temporal_end_column = 'temporal_end';
     protected $temporal_max = '2999-01-01 00:00:00';
+    protected $overwritable = ['worthless_column']; //columns that can simply be overwritten if only they are being updated
 }
 ```
 
@@ -102,6 +103,8 @@ $anotherWidget = Widget::create(['name'=>'Other Cog']); //another way to insert 
 You can only save the newest version of a record. If you find an old version of something and try to modify it, an error will be thrown... you can't change the past.
 
 If you want to overwrite the latest revision, use ```overwrite()``` instead of ```save()```. This will simply update the revision instead of inserting a new one. It totally defeats the purpose of using temporal models, but it can be useful for making frequent tiny changes. Like incrementing/decrementing something on a set schedule, or updating a cached calculation.
+
+You can also automatically overwrite whenever you perform a ```save()``` if only columns you've defined as ```overwritable``` have been changed. Just add an ```$overwritable``` array property to your model like this: ```protected $overwritable = ['worthless_column', 'cached_value'];``` and we'll automatically perform an overwrite (instead of inserting a new version) when only those columns are changing. If you notice lots of unnecessary versions in your table just because of one or two columns changing that you don't care about the history of, add those columns here!
 
 
 ###### Retrieving temporal models
@@ -183,6 +186,46 @@ $copyB->name = 'new name B';
 $copyB->save(); //attempts to update the original revision again and throws an error
 ```
 - When a revision is overwritten, its ```updated_at``` field is automatically updated. This means it's possible to have an ```updated_at``` field that does not match the revision's ```temporal_start```. The ```version``` field, however, is NOT updated (which ensures version numbers always start at 1 and never have gaps).
+- We can't automatically add the temporal restriction to queries outside of the query builder specific to the temporal Eloquent model. If you need to do some manual (non-ORM) queries, remember to add a WHERE clause to only get the latest versions (```WHERE temporal_end = '2999-01-01'```).
+- The ```unique``` validation method does NOT respect temporal models. So, it will consider ALL versions and fail even if old versions of a record have the same value. This should quickly become apparant if you make your User model temporal. If you want a tweaked ```unique``` validation method that works for temporal models, try something like this...
+```php
+public function validateTemporalUnique($attribute, $value, $parameters)
+{
+	$this->requireParameterCount(1, $parameters, 'unique');
+
+	list($connection, $table) = $this->parseTable($parameters[0]);
+
+	// The second parameter position holds the name of the column that needs to
+	// be verified as unique. If this parameter isn't specified we will just
+	// assume that this column to be verified shares the attribute's name.
+	$column = $this->getQueryColumn($parameters, $attribute);
+
+	list($idColumn, $id) = [null, null];
+
+	if (isset($parameters[2])) {
+		list($idColumn, $id) = $this->getUniqueIds($parameters);
+	}
+
+	// The presence verifier is responsible for counting rows within this store
+	// mechanism which might be a relational database or any other permanent
+	// data store like Redis, etc. We will use it to determine uniqueness.
+	$verifier = $this->getPresenceVerifierFor($connection);
+
+	$extra = $this->getUniqueExtra($parameters);
+
+	if ($this->currentRule instanceof Unique) {
+		$extra = array_merge($extra, $this->currentRule->queryCallbacks());
+	}
+
+	//add the default temporal property...
+	if (!array_key_exists('temporal_end', $extra))
+		$extra['temporal_end'] = '2999-01-01';
+
+	return $verifier->getCount(
+			$table, $column, $value, $id, $idColumn, $extra
+		) == 0;
+}
+ ```
  
 ## Credits
 Inspired by [navjobs/temporal-models](https://github.com/navjobs/temporal-models) and [FuelPHP's temporal models](https://fuelphp.com/dev-docs/packages/orm/model/temporal.html)

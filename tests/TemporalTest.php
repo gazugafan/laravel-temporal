@@ -62,6 +62,7 @@ class TemporalTest extends TestCase
             $table->dateTime('temporal_end');
             $table->timestamps();
 			$table->string('name');
+			$table->string('worthless');
 			$table->primary(['id', 'version']);
 			$table->index(['temporal_end', 'id']);
 			$table->index(['id', 'temporal_start', 'temporal_end']);
@@ -80,12 +81,14 @@ class TemporalTest extends TestCase
 		{
 			$widget = new Widget();
 			$widget->name = str_random();
+			$widget->worthless = str_random();
 			$widget->save();
 
 			$versions = rand(0, 5);
 			for($y = 0; $y < $versions; $y++)
 			{
 				$widget->name = str_random();
+				$widget->worthless = str_random();
 				$widget->save();
 			}
 		}
@@ -182,6 +185,32 @@ class TemporalTest extends TestCase
 		$allVersions = Widget::withoutGlobalScopes()->where('id', $widget->id)->get();
 		$this->assertCount(2, $allVersions);
     }
+
+	public function testChangeOverwritableOverwrites()
+	{
+		$widget = new Widget(['name' => 'test1', 'worthless'=>'a']);
+		$widget->save();
+		$this->assertEquals(1, $widget->version);
+		$original_date = $widget->temporal_start;
+
+		sleep(2);
+
+		$widget->worthless = 'b';
+		$widget->save();
+
+		$this->assertEquals(1, $widget->version);
+		$this->assertGreaterThan(1, Carbon::parse($widget->temporal_start)->diffInSeconds());
+		$this->assertLessThan(2, Carbon::parse($widget->updated_at)->diffInSeconds());
+
+		$latestWidget = Widget::find($widget->id);
+		$this->assertEquals('b', $latestWidget->worthless);
+		$this->assertEquals(1, $latestWidget->version);
+		$this->assertGreaterThan(1, Carbon::parse($latestWidget->temporal_start)->diffInSeconds());
+		$this->assertLessThan(2, Carbon::parse($latestWidget->updated_at)->diffInSeconds());
+
+		$allVersions = Widget::withoutGlobalScopes()->where('id', $widget->id)->get();
+		$this->assertCount(1, $allVersions);
+	}
 
     public function testQuickSavesCauseNoVersionConflicts()
     {
@@ -805,4 +834,5 @@ class Widget extends Eloquent
 	//protected $dates = ['temporal_start', 'temporal_end'];
 	protected $table = 'widgets';
 	protected $guarded = [];
+	protected $overwritable = ['worthless'];
 }
