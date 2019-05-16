@@ -430,6 +430,22 @@ trait Temporal
 		return $query->get();
 	}
 
+	/**
+	 * Get a new query to restore one or more models by their queueable IDs.
+	 *
+	 * @param  array|int  $ids
+	 * @return \Illuminate\Database\Eloquent\Builder
+	 */
+	public function newQueryForRestoration($ids)
+	{
+		$query = $this->newQueryWithoutScopes();
+		$query->where($this->getTemporalEndColumn(), $this->getTemporalMax());
+
+		return is_array($ids)
+			? $query->whereIn($this->getQualifiedKeyName(), $ids)
+			: $query->whereKey($ids);
+	}
+
 
 	/********************************************************************************
 	 * Static Methods
