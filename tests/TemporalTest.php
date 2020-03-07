@@ -21,8 +21,8 @@ class TemporalTest extends \PHPUnit\Framework\TestCase
             'database'  => 'testbed',
             'host'  => '127.0.0.1',
             'port'  => '3306',
-            'username'  => 'root',
-            'password'  => 'root',
+            'username'  => 'homestead',
+            'password'  => 'secret',
         ]);
 
         $db->setEventDispatcher(new Dispatcher(new Container()));
