@@ -1,20 +1,19 @@
 <?php
-use Carbon\Carbon;
-use Gazugafan\Temporal\Temporal;
-use Illuminate\Events\Dispatcher;
-use Illuminate\Container\Container;
-use Gazugafan\Temporal\Test\TestCase;
-use Illuminate\Database\Connection;
-use Illuminate\Database\Capsule\Manager as DB;
-use Illuminate\Database\Eloquent\Model as Eloquent;
-use Gazugafan\Temporal\Exceptions\TemporalException;
-use Gazugafan\Temporal\Migration;
 
-class TemporalTest extends TestCase
+use Carbon\Carbon;
+use Gazugafan\Temporal\Exceptions\TemporalException;
+use Gazugafan\Temporal\Temporal;
+use Illuminate\Database\Capsule\Manager as DB;
+use Illuminate\Container\Container;
+
+use Illuminate\Database\Connection;
+use Illuminate\Database\Eloquent\Model as Eloquent;
+use Illuminate\Events\Dispatcher;
+
+class TemporalTest extends \PHPUnit\Framework\TestCase
 {
-    public function setUp()
+    public function setUp(): void
     {
-        parent::setUp();
         $db = new DB();
 
         $db->addConnection([
@@ -22,8 +21,8 @@ class TemporalTest extends TestCase
             'database'  => 'testbed',
             'host'  => '127.0.0.1',
             'port'  => '3306',
-            'username'  => 'homestead',
-            'password'  => 'secret',
+            'username'  => 'root',
+            'password'  => 'root',
         ]);
 
         $db->setEventDispatcher(new Dispatcher(new Container()));
@@ -62,7 +61,7 @@ class TemporalTest extends TestCase
             $table->dateTime('temporal_end');
             $table->timestamps();
 			$table->string('name');
-			$table->string('worthless');
+			$table->string('worthless')->nullable();
 			$table->primary(['id', 'version']);
 			$table->index(['temporal_end', 'id']);
 			$table->index(['id', 'temporal_start', 'temporal_end']);
@@ -107,7 +106,7 @@ class TemporalTest extends TestCase
      *
      * @return void
      */
-    public function tearDown()
+    public function tearDown(): void
     {
         $this->schema()->drop('widgets');
     }
@@ -222,6 +221,8 @@ class TemporalTest extends TestCase
 			$widget->name = 'test' . $x;
 			$widget->save();
 		}
+
+    	$this->assertTrue(true);
     }
 
 	public function testGlobalScopeFindsLatestVersion()
@@ -403,7 +404,7 @@ class TemporalTest extends TestCase
 
 		sleep(2);
 
-		$this->setExpectedException(Exception::class);
+		$this->expectException(Exception::class);
 
 		$widget1->name = 'test3';
 		$widget1->save();
@@ -784,7 +785,7 @@ class TemporalTest extends TestCase
 		$firstWidget = $widget->firstVersion();
 		$firstWidget->name = 'new name';
 
-		$this->setExpectedException(TemporalException::class);
+		$this->expectException(TemporalException::class);
 		$firstWidget->save();
 	}
 
@@ -799,7 +800,7 @@ class TemporalTest extends TestCase
 
 		$firstWidget = $widget->firstVersion();
 
-		$this->setExpectedException(TemporalException::class);
+		$this->expectException(TemporalException::class);
 		$firstWidget->delete();
 	}
 
