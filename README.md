@@ -18,12 +18,12 @@ Install via Composer...
 
 For Laravel 5 use the version 1.1
 ```bash
-composer require gazugafan/laravel-temporal@1.1
+composer require gazugafan/laravel-temporal:1.1
 ```
 
 For Laravel 6.0 use the version 2.0
 ```bash
-composer require gazugafan/laravel-temporal@2.0
+composer require gazugafan/laravel-temporal:2.0
 ```
 
 ## Overview
