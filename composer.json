@@ -10,16 +10,16 @@
     "homepage": "https://github.com/gazugafan/laravel-temporal",
     "license": "MIT",
     "require": {
-        "php" : ">=7.2.0",
-        "illuminate/database": "^6.0",
-        "illuminate/events": "^6.0",
+        "php" : ">=8.0",
+        "illuminate/database": "^8.0",
+        "illuminate/events": "^8.0",
         "doctrine/dbal": "^2.5",
         "laravel/helpers": "^1.2"
     },
     "require-dev": {
 		"phpunit/phpunit" : "^7.5.15|^8.4|^9.0",
 		"mockery/mockery": "^0.9.4",
-		"satooshi/php-coveralls": "1.*"
+		"satooshi/php-coveralls": "*"
     },
     "autoload": {
         "psr-4": {
