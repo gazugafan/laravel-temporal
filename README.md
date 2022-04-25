@@ -26,6 +26,11 @@ For Laravel 6.0 use the version 2.0
 composer require gazugafan/laravel-temporal:2.0
 ```
 
+For Laravel 7.0 use the version 3.0
+```bash
+composer require gazugafan/laravel-temporal:3.0
+```
+
 For Laravel 8.0 use the version 4.0
 ```bash
 composer require gazugafan/laravel-temporal:4.0
