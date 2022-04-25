@@ -9,7 +9,7 @@ Normally you're only going to care about the current versions of things, so by d
 
 ## Requirements
 
-- This has been unit tested, but only on Laravel 5.4 with PHP 7.1 and Laravel 6.0 with PHP 7.2. Let me know if you find it works on older versions!
+- This has been unit tested, but only on Laravel 5.4 with PHP 7.1, Laravel 6.0 with PHP 7.2 and Laravel 8.0 with PHP 8.0.3. Let me know if you find it works on older versions!
 - Also only tested with MySQL/MariaDB. Likely will not work with SQLite, but let me know if you find it works with other databases!
 
 ## Installation
@@ -18,12 +18,17 @@ Install via Composer...
 
 For Laravel 5 use the version 1.1
 ```bash
-composer require gazugafan/laravel-temporal@1.1
+composer require gazugafan/laravel-temporal:1.1
 ```
 
 For Laravel 6.0 use the version 2.0
 ```bash
-composer require gazugafan/laravel-temporal@2.0
+composer require gazugafan/laravel-temporal:2.0
+```
+
+For Laravel 8.0 use the version 4.0
+```bash
+composer require gazugafan/laravel-temporal:4.0
 ```
 
 ## Overview
