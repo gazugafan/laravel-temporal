@@ -36,6 +36,11 @@ For Laravel 8.0 use the version 4.0
 composer require gazugafan/laravel-temporal:4.0
 ```
 
+For Laravel 9.0 use the version 5.0
+```bash
+composer require gazugafan/laravel-temporal:5.0
+```
+
 ## Overview
 
 Temporal models get three new fields...
