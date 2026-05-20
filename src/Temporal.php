@@ -3,6 +3,8 @@
 use Gazugafan\Temporal\Exceptions\TemporalException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Concerns\AsPivot;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Carbon\Carbon;
 
 trait Temporal
@@ -214,6 +216,35 @@ trait Temporal
 			->where($this->getKeyName(), $this->getKey())
 			->where($this->getTemporalEndColumn(), $this->getTemporalMax())
 			->first();
+	}
+
+	/**
+	 * Reload the current model instance with fresh attributes from the database.
+	 *
+	 * @return $this
+	 */
+	public function refresh()
+	{
+		if (! $this->exists) {
+			return $this;
+		}
+
+		$this->setRawAttributes(
+			static::newQueryWithoutScopes()
+				->where($this->getKeyName(), $this->getKey())
+				->where($this->getTemporalEndColumn(), $this->getTemporalMax())
+				->firstOrFail()
+				->attributes
+		);
+
+		$this->load(collect($this->relations)->reject(function ($relation) {
+			return $relation instanceof Pivot
+				|| (is_object($relation) && in_array(AsPivot::class, class_uses_recursive($relation), true));
+		})->keys()->all());
+
+		$this->syncOriginal();
+
+		return $this;
 	}
 
 
